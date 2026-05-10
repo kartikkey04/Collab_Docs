@@ -1,0 +1,161 @@
+/**
+ * prisma/schema.prisma
+ *
+ * ADDED MODELS:
+ *   DocumentVersion    — snapshot history for every document
+ *   CommentThread      — inline comment thread anchored to a document
+ *   Comment            — individual reply inside a thread
+ *   ShareToken         — public share-link with optional expiry & role
+ *   PasswordResetToken — single-use email-based password reset
+ *
+ * EXTENDED:
+ *   User     — avatarUrl, bio
+ *   Document — full-text search via raw SQL migration (tsvector + GIN index)
+ */
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  VIEWER
+  EDITOR
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  avatarUrl    String?
+  bio          String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  documents            Document[]
+  collaborators        DocumentCollaborator[]
+  versionsCreated      DocumentVersion[]
+  commentThreads       CommentThread[]
+  comments             Comment[]
+  shareTokensCreated   ShareToken[]
+  passwordResetTokens  PasswordResetToken[]
+
+  @@index([createdAt])
+}
+
+model Document {
+  id        String   @id @default(uuid())
+  title     String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  collaborators  DocumentCollaborator[]
+  versions       DocumentVersion[]
+  commentThreads CommentThread[]
+  shareTokens    ShareToken[]
+
+  @@index([userId])
+  @@index([updatedAt(sort: Desc)])
+  @@index([userId, updatedAt(sort: Desc)])
+}
+
+model DocumentCollaborator {
+  id         String   @id @default(uuid())
+  documentId String
+  userId     String
+  role       Role     @default(VIEWER)
+  createdAt  DateTime @default(now())
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, userId])
+  @@index([documentId])
+  @@index([userId])
+}
+
+model DocumentVersion {
+  id         String   @id @default(uuid())
+  documentId String
+  content    String   @db.Text
+  title      String
+  createdAt  DateTime @default(now())
+  createdBy  String
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  creator  User     @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([documentId, createdAt(sort: Desc)])
+}
+
+model CommentThread {
+  id         String    @id @default(uuid())
+  documentId String
+  userId     String
+  selection  String?   // JSON: { from, to, text }
+  resolvedAt DateTime?
+  resolvedBy String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  document Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  author   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments Comment[]
+
+  @@index([documentId, createdAt])
+}
+
+model Comment {
+  id        String    @id @default(uuid())
+  threadId  String
+  userId    String
+  body      String    @db.Text
+  editedAt  DateTime?
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  thread CommentThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  author User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([threadId, createdAt])
+}
+
+model ShareToken {
+  id         String    @id @default(uuid())
+  token      String    @unique @default(uuid())
+  documentId String
+  role       Role      @default(VIEWER)
+  expiresAt  DateTime?
+  createdBy  String
+  createdAt  DateTime  @default(now())
+  revokedAt  DateTime?
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  creator  User     @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@index([token])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  token     String    @unique @default(uuid())
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+}

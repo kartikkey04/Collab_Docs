@@ -1,0 +1,11 @@
+.env
+node_modules
+dist
+coverage
+logs
+*.log
+*.env
+.DS_Store
+.idea
+.vscode
+*.suo
