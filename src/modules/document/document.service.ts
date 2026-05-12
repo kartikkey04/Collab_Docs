@@ -35,11 +35,16 @@ export class DocumentService {
   }
 
   async listByUser(userId: string) {
-    return prisma.document.findMany({
+    const docs = await prisma.document.findMany({
       where: { userId },
       orderBy: { updatedAt: "desc" },
-      select: { id: true, title: true, updatedAt: true, createdAt: true },
+      select: { id: true, title: true, content: true, updatedAt: true, createdAt: true },
     });
+
+    return docs.map(doc => ({
+      ...doc,
+      content: doc.content.length > 150 ? doc.content.slice(0, 150) + "..." : doc.content
+    }));
   }
 
   async updateContent(id: string, content: string) {

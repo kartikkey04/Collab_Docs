@@ -46,6 +46,7 @@ export class UserService {
           select: {
             id:        true,
             title:     true,
+            content:   true,
             updatedAt: true,
             createdAt: true,
             user:      { select: { id: true, name: true, avatarUrl: true } },
@@ -57,6 +58,9 @@ export class UserService {
 
     return collabs.map((c) => ({
       ...c.document,
+      content: c.document.content.length > 150 
+        ? c.document.content.slice(0, 150) + "..." 
+        : c.document.content,
       role: c.role,
     }));
   }
