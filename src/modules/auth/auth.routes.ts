@@ -49,8 +49,8 @@ export async function authRoutes(app: FastifyInstance) {
       data: { email, name, passwordHash: hashPassword(password) },
     });
 
-    const token = signToken({ userId: user.id, email: user.email });
-    return reply.status(201).send({ token, user: { id: user.id, email: user.email, name: user.name } });
+    const token = signToken({ userId: user.id, email: user.email ?? "" });
+    return reply.status(201).send({ token, user: { id: user.id, email: user.email ?? "", name: user.name ?? "" } });
   });
 
   app.post("/auth/login", async (request, reply) => {
@@ -59,12 +59,12 @@ export async function authRoutes(app: FastifyInstance) {
 
     const { email, password } = result.data;
     const user = await prisma.user.findUnique({ where: { email } });
-    const passwordOk = user ? verifyPassword(password, user.passwordHash) : false;
+    const passwordOk = (user && user.passwordHash) ? verifyPassword(password, user.passwordHash) : false;
 
     if (!user || !passwordOk) return reply.status(401).send({ error: "Invalid email or password" });
 
-    const token = signToken({ userId: user.id, email: user.email });
-    return reply.send({ token, user: { id: user.id, email: user.email, name: user.name } });
+    const token = signToken({ userId: user.id, email: user.email ?? "" });
+    return reply.send({ token, user: { id: user.id, email: user.email ?? "", name: user.name ?? "" } });
   });
 
   app.post("/auth/otp/send", async (request, reply) => {
