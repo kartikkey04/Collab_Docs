@@ -43,8 +43,9 @@ async function sendResetEmail(email: string, token: string): Promise<void> {
     const transporter = nodemailer.createTransport({
       host:   config.smtpHost,
       port:   config.smtpPort,
-      secure: config.smtpPort === 465,
+      secure: false,  // 587 uses STARTTLS, not SSL
       auth:   { user: config.smtpUser, pass: config.smtpPass },
+      tls:    { rejectUnauthorized: false },
     });
     await transporter.sendMail({
       from:    `"CollabDocs" <${config.smtpFrom}>`,
