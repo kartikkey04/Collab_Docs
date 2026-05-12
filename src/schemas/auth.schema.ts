@@ -23,3 +23,16 @@ export const loginSchema = z.object({
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+
+export const otpSendSchema = z.object({
+  phoneNumber: z.string().regex(/^\+?[1-9]\d{1,14}$/, "Invalid phone number format"),
+});
+
+export const otpVerifySchema = z.object({
+  phoneNumber: z.string().regex(/^\+?[1-9]\d{1,14}$/, "Invalid phone number format"),
+  code: z.string().length(6, "OTP must be 6 digits"),
+});
+
+export const googleAuthSchema = z.object({
+  idToken: z.string().min(1, "Google ID token is required"),
+});

@@ -14,7 +14,7 @@ import { Server } from "socket.io";
 import { createAdapter } from "@socket.io/redis-adapter";
 
 import { config } from "./config/env.js";
-import { pubClient, subClient } from "./services/redis/redis.js";
+import { pubClient, subClient, redisClient } from "./services/redis/redis.js";
 import { prisma } from "./services/db/prisma.js";
 
 // Routes
@@ -76,6 +76,7 @@ async function bootstrap() {
   // ── Redis ──────────────────────────────────────────────────────────────────
   await pubClient.connect();
   await subClient.connect();
+  await redisClient.connect();
   io.adapter(createAdapter(pubClient, subClient));
   app.log.info("Redis adapter connected");
 
@@ -89,6 +90,7 @@ async function bootstrap() {
     await io.close();
     await pubClient.quit();
     await subClient.quit();
+    await redisClient.quit();
     await prisma.$disconnect();
     process.exit(0);
   };

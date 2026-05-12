@@ -14,3 +14,13 @@ import { config } from "../../config/env.js";
 
 export const pubClient = createClient({ url: config.redisUrl });
 export const subClient = pubClient.duplicate();
+export const redisClient = pubClient.duplicate();
+
+// Helper to connect all clients
+export async function connectRedis() {
+  await Promise.all([
+    pubClient.connect(),
+    subClient.connect(),
+    redisClient.connect()
+  ]);
+}

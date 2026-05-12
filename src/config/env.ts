@@ -47,4 +47,5 @@ export const config = {
   smtpUser:   optionalEnv("SMTP_USER"),
   smtpPass:   optionalEnv("SMTP_PASS"),
   smtpFrom:   optionalEnv("SMTP_FROM", "noreply@collabdocs.app"),
+  googleClientId: optionalEnv("GOOGLE_CLIENT_ID"),
 } as const;
