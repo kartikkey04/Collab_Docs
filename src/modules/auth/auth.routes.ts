@@ -16,6 +16,7 @@ import { forgotPasswordSchema, resetPasswordSchema } from "../../schemas/passwor
 import { passwordResetService } from "./password-reset.service.js";
 import { config } from "../../config/env.js";
 import { redisClient } from "../../services/redis/redis.js";
+import { firebaseAdmin } from "../../services/firebase/firebase.js";
 
 const googleClient = new OAuth2Client(config.googleClientId);
 
@@ -163,6 +164,61 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.send({ token, user: { id: user.id, email: user.email, name: user.name, googleId: user.googleId } });
     } catch (err) {
       return reply.status(401).send({ error: "Google authentication failed" });
+    }
+  });
+
+  app.post("/auth/firebase", async (request, reply) => {
+    const { idToken } = request.body as { idToken: string };
+    if (!idToken) return reply.status(400).send({ error: "Firebase ID token is required" });
+
+    try {
+      const decodedToken = await firebaseAdmin.auth().verifyIdToken(idToken);
+      const { phone_number: phoneNumber, email, name, picture: avatarUrl } = decodedToken;
+
+      if (!phoneNumber && !email) {
+        return reply.status(400).send({ error: "Token does not contain phone number or email" });
+      }
+
+      // Find by phone or email
+      let user = await prisma.user.findFirst({
+        where: {
+          OR: [
+            phoneNumber ? { phoneNumber } : undefined,
+            email ? { email } : undefined
+          ].filter(Boolean) as any
+        }
+      });
+
+      if (!user) {
+        user = await prisma.user.create({
+          data: {
+            phoneNumber,
+            email,
+            name,
+            avatarUrl,
+          },
+        });
+      } else {
+        // Update missing fields
+        const updateData: any = {};
+        if (!user.phoneNumber && phoneNumber) updateData.phoneNumber = phoneNumber;
+        if (!user.email && email) updateData.email = email;
+        if (!user.name && name) updateData.name = name;
+        if (!user.avatarUrl && avatarUrl) updateData.avatarUrl = avatarUrl;
+        
+        if (Object.keys(updateData).length > 0) {
+          user = await prisma.user.update({
+            where: { id: user.id },
+            data: updateData,
+          });
+        }
+      }
+
+      const token = signToken({ userId: user.id, email: user.email || "" });
+      return reply.send({ token, user: { id: user.id, email: user.email, name: user.name, phoneNumber: user.phoneNumber } });
+    } catch (err) {
+      console.error("Firebase auth error:", err);
+      return reply.status(401).send({ error: "Firebase authentication failed" });
     }
   });
 }

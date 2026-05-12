@@ -48,4 +48,9 @@ export const config = {
   smtpPass:   optionalEnv("SMTP_PASS"),
   smtpFrom:   optionalEnv("SMTP_FROM", "noreply@collabdocs.app"),
   googleClientId: optionalEnv("GOOGLE_CLIENT_ID"),
+  
+  // Firebase Admin
+  firebaseProjectId:   optionalEnv("FIREBASE_PROJECT_ID"),
+  firebaseClientEmail: optionalEnv("FIREBASE_CLIENT_EMAIL"),
+  firebasePrivateKey:  optionalEnv("FIREBASE_PRIVATE_KEY"),
 } as const;
