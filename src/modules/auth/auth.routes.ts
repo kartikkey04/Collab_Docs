@@ -163,7 +163,8 @@ export async function authRoutes(app: FastifyInstance) {
       const token = signToken({ userId: user.id, email: user.email || "" });
       return reply.send({ token, user: { id: user.id, email: user.email, name: user.name, googleId: user.googleId } });
     } catch (err) {
-      return reply.status(401).send({ error: "Google authentication failed" });
+      console.error("Google auth error detail:", err);
+      return reply.status(401).send({ error: "Google authentication failed", detail: err instanceof Error ? err.message : String(err) });
     }
   });
 
@@ -218,7 +219,7 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.send({ token, user: { id: user.id, email: user.email, name: user.name, phoneNumber: user.phoneNumber } });
     } catch (err) {
       console.error("Firebase auth error:", err);
-      return reply.status(401).send({ error: "Firebase authentication failed" });
+      return reply.status(401).send({ error: "Firebase authentication failed", detail: err instanceof Error ? err.message : String(err) });
     }
   });
 }

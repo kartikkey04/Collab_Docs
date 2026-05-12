@@ -80,6 +80,12 @@ async function bootstrap() {
   io.adapter(createAdapter(pubClient, subClient));
   app.log.info("Redis adapter connected");
 
+  if (config.googleClientId) {
+    app.log.info(`Google Auth configured (ID: ${config.googleClientId.slice(0, 10)}...)`);
+  } else {
+    app.log.warn("GOOGLE_CLIENT_ID is missing! Google Login will fail.");
+  }
+
   // ── Start ──────────────────────────────────────────────────────────────────
   await app.listen({ port: config.port, host: config.host });
 
